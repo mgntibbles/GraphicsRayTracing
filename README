@@ -1,0 +1,12 @@
+Author: Megan Tibbles (1091728)
+Date: March 22th Fri
+
+To run:
+- running open index.html in terminal will open the page on the browser
+- you will need to pick one or two files (either just .txt file or .obj file as well). It is a multi-select file reader so you need to select them both and then click open
+- The image will appear, it will take time depending on the shape.
+
+Notes:
+- You will need to reset the page before loading a new file
+- the bigger/more complex objects will take longer to load. For example, the cube takes about 2 seconds to load and the torus takes about a minute to load. 
+- I don't think the rotations work perfectly

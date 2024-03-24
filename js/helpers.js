@@ -1,3 +1,6 @@
+// By: Megan Tibbles
+// ray tracing program 
+
 let sphereCenters = [];
 let R = [];
 let sphereAmbients = [];
@@ -149,26 +152,31 @@ function normalize_vector(x, y, z){
     return [x/length, y/length, z/length];
 }
 
+//returns the discriminant
 function find_discriminant(A, B, C){
     dis = B**2 - (4*A*C);
     return dis;
 }
 
+//finds the distance
 function find_distance(p1, p2){
     distance = Math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 + (p2[2] - p1[2])**2);
     return distance;
 }
 
+//calculates the dot product of two vectors
 function dot_product(V1, V2){
     prod = (V1[0]*V2[0]) + (V1[1]*V2[1]) + (V1[2]*V2[2]);
     return prod;
 }
 
+//calculates the cross product of two vectors
 function cross_product(V1, V2){
     prod= [(V1[2]*V2[1])-(V1[1]*V2[2]), (V1[0]*V2[2])-(V1[2]*V2[0]), (V1[1]*V2[0])-(V1[0]*V2[1])];
     return prod;
 }
 
+//calculates the normal of a sphere
 function calculate_normal(i, c, Sr, s){
     N = [(i[0] - c[(s*3)])/Sr, (i[1] - c[(s*3)+1])/Sr, (i[2] - c[(s*3)+2])/Sr];
     prd = dot_product(N, [0,0,0]);
@@ -178,12 +186,13 @@ function calculate_normal(i, c, Sr, s){
     return normalize_vector(N[0], N[1], N[2]);
 }
 
+//calculates the light vector
 function calculate_light(loc, i){
     L = [(loc[0]-i[0]), (loc[1]-i[1]), (loc[2]-i[2])];
     return normalize_vector(L[0], L[1], L[2]);
 }
 
-
+//calculates the reflection vector
 function calculate_reflection(N, L){
     con = 2 * (dot_product(N, L));
     temp = [N[0]*con, N[1]*con, N[2]*con];
@@ -191,11 +200,13 @@ function calculate_reflection(N, L){
     return normalize_vector(Rvec[0], Rvec[1], Rvec[2]);
 }
 
+//calculates the viewing vector
 function calculate_viewing(i){
     let temp = [0-i[0], 0-i[1], 0-i[2]];
     return normalize_vector(temp[0], temp[1], temp[2]);
 }
 
+//calcualtes the colour using the illumination equation
 function illumination_equation(Nv, Lv, Rv, V, sAmb, sDiff, sSpec, lAmb, pLight, s, shadow){
     colours = ['r', 'g', 'b'];
     newColour = [];
@@ -220,6 +231,7 @@ function illumination_equation(Nv, Lv, Rv, V, sAmb, sDiff, sSpec, lAmb, pLight, 
     return newColour;
 }
 
+//applies the transformations to the object
 function transform(points, trans, rot, scale){
     rotPointX = points[0];
     rotPointY = points[1];
@@ -251,6 +263,7 @@ function transform(points, trans, rot, scale){
     return points;
 }
 
+//parses the values from the obj file
 function parse_obj(){
     let index = 0;
     let vertexCount = 0;
@@ -302,7 +315,7 @@ function parse_obj(){
     console.log(vertices, indices, textures, normals);
 }
 
-//check if a ray intersections with an object
+//check if a ray intersections with an object. Returns intersection point and the normal vector
 function check_intersection(i, V, vp){
     epsilon = 0.0000001;
     i1 = indices[i];
@@ -345,6 +358,7 @@ function check_intersection(i, V, vp){
     return [0];
 }
 
+//check if the ray intersects with the sphere
 function check_sphere_intersection(s, V, vp){
     let ri = []
     let A = 1.0
@@ -352,15 +366,15 @@ function check_sphere_intersection(s, V, vp){
     let C  = (vp[0] - sphereCenters[(s*3)])**2 + (vp[1] - sphereCenters[(s*3)+1])**2 + (vp[2] - sphereCenters[(s*3)+2])**2 - R[s]**2;
     dis = find_discriminant(A, B, C);
 
+    //only intersects once
     if (dis < 0.01 && dis > -0.01){
         t0 = (-B - Math.sqrt(Math.abs(dis)))/(2*A);
         if (t0<0){
             return [];
         }
-        //ri = [([vp[0]] + V[0]*t0), ([vp[1]] + V[1]*t0), (vp[2] + V[2]*t0)];
         ri = [(vp[0] + V[0]*t0), (vp[1] + V[1]*t0), (vp[2] + V[2]*t0)];
 
-    } else if (dis > 0) {
+    } else if (dis > 0) {   //intersects twice
         t0 = (-B - Math.sqrt(dis))/(2*A);
         t1 = (-B + Math.sqrt(dis))/(2*A);
         if (t0>=0 && t1>=0){
@@ -374,6 +388,7 @@ function check_sphere_intersection(s, V, vp){
             } else {
                 ri = ri1;
             }
+        //if < 0, behind the origin point
         } else if (t0>=0){
             ri = [(vp[0] + V[0]*t0), (vp[1] + V[1]*t0), (vp[2] + V[2]*t0)];
         } else if (t1>=0){
@@ -422,18 +437,15 @@ function calculate_image(){
                             let ri2 = check_sphere_intersection(s2, Lv, ri);
                             if (ri2.length==3){
                                 shadow = true;
-                                console.log(ri, lightCenter, ri2, s, s2, Lv);
                             }
 
                             let RvRi = check_sphere_intersection(s2, Rv, ri);
                             if (RvRi.length==3){
-                                //console.log(x,y);
                                 RvVv = calculate_viewing(RvRi);
                                 RvNv = calculate_normal(RvRi, sphereCenters, R[s2], s2);
                                 RvLv = calculate_light(lightCenter, RvRi);
                                 RvRv = calculate_reflection(RvNv, RvLv); 
                                 blendColour = illumination_equation(Nv, Lv, Rv, Vv, sphereAmbients, sphereDiffuses, sphereSpeculars, lightAmb, pointLight, s2, false);
-                                //console.log(ri, RvRi, s, s2, Nv, Lv, Rv);
                             }
                         }
                     }
@@ -444,7 +456,6 @@ function calculate_image(){
                         }
                         let RvRi = check_intersection(i2, Rv, ri);
                         if (RvRi.length!=1){
-                            //console.log(x,y);
                             RvVv = calculate_viewing(RvRi[0]);
                             RvNv = RvRi[1]
                             RvLv = calculate_light(lightCenter, RvRi[0]);
@@ -476,7 +487,6 @@ function calculate_image(){
                         Vv = calculate_viewing(ri[0]);
                         Lv = calculate_light(lightCenter, ri[0]);
                         Rv = calculate_reflection(Nv, Lv);
-                        //Lv = [Lv[0], Lv[1], -Lv[2]];
                         for (let i2=0; i2<indices.length; i2+=3){
                             if (i2!=i){
                                 let ri2 = check_intersection(i2, Lv, ri[0]);
@@ -485,7 +495,6 @@ function calculate_image(){
                                 }
                                 let RvRi = check_intersection(i2, Rv, ri[0]);
                                 if (RvRi.length!=1){
-                                    //console.log(x,y);
                                     RvVv = calculate_viewing(RvRi[0]);
                                     RvNv = RvRi[1]
                                     RvLv = calculate_light(lightCenter, RvRi[0]);
@@ -495,7 +504,6 @@ function calculate_image(){
                             }
                         }
                         for (s2=0; s2<numSpheres; s2++){
-                            //console.log(Lv)
                             let ri2 = check_sphere_intersection(s2, Lv, ri[0]);
                             if (ri2.length==3){
                                 shadow = true;
@@ -510,23 +518,15 @@ function calculate_image(){
                                 //RvLv = calculate_light(lightCenter, RvRi);
                                 //RvRv = calculate_reflection(RvNv, RvLv); 
                                 blendColour = illumination_equation(Nv, Lv, Rv, Vv, sphereAmbients, sphereDiffuses, sphereSpeculars, lightAmb, pointLight, s2, false);
-                                //console.log(RvRi, ri[0], blendColour);
                             }
                         }
-                       
                         let colour = illumination_equation(Nv, Lv, Rv, Vv, meshAmb, meshDiffuse, meshSpec, lightAmb, pointLight, 0, shadow);
                         if (blendColour.length !=0){
                             colour = [(1.0 -meshShiny)*colour[0]+ (meshShiny)*blendColour[0], (1.0 -meshShiny)*colour[1] + (meshShiny)*blendColour[1], (1.0 -meshShiny)*colour[2] + (meshShiny)*blendColour[2]];
-                            //console.log("blend: ",x,y, colour);
                         }
                         rgb1 = `rgb(`+colour[0]+`,`+colour[1]+`,`+colour[2]+`)`;
                         dist = find_distance(vp, ri[0]);
                         if (dist<closestDist){
-                            if (blendColour.length!=0){
-                                console.log("BLEND closest: ",x,y, colour);
-                            } else{
-                                //console.log("NON closest: ",x,y, colour);
-                            }
                             rgb = rgb1;
                             closestDist = dist;
                         }
